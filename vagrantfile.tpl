@@ -6,29 +6,16 @@ Vagrant.require_version ">= 1.6.3"
 Vagrant.configure("2") do |config|
   config.ssh.shell = "sh"
   config.ssh.username = "docker"
-  config.ssh.insert_key = false
+  config.ssh.password = "tcuser"
+  config.ssh.insert_key = true
 
   # Forward the Docker port
-  config.vm.network :forwarded_port, guest: 2375, host: 2375
+  config.vm.network :forwarded_port, guest: 2376, host: 2376
 
   # Disable synced folder by default
   config.vm.synced_folder ".", "/vagrant", disabled: true
 
   # Attach the b2d ISO so that it can boot
-  config.vm.provider :virtualbox do |v|
-    v.check_guest_additions = false
-    v.customize "pre-boot", [
-      "storageattach", :id,
-      "--storagectl", "IDE Controller",
-      "--port", "0",
-      "--device", "1",
-      "--type", "dvddrive",
-      "--medium", File.expand_path("../boot2docker.iso", __FILE__),
-    ]
-    v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-    v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
-  end
-
   config.vm.provider :parallels do |p|
     p.check_guest_tools = false
     p.functional_psf = false
@@ -43,4 +30,5 @@ Vagrant.configure("2") do |config|
       "--device-bootorder", "cdrom0 hdd0"
     ]
   end
+
 end
