@@ -13,8 +13,8 @@ Vagrant.configure("2") do |config|
     # Forward the Docker port
     config.vm.network :forwarded_port, guest: 2376, host: 2376
 
-    # Disable synced folder by default
-    config.vm.synced_folder ".", "/vagrant", disabled: true
+    # Synced folder by default
+    config.vm.synced_folder ".", Dir.pwd, type: "nfs", mount_options: ["nolock", "vers=3", "udp"]
 
     # Attach the b2d ISO so that it can boot
     config.vm.provider :parallels do |p|

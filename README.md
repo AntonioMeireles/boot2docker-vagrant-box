@@ -1,33 +1,33 @@
 # boot2docker Vagrant Box - Parallels
 
-This is basically a more-frequently-updated version of
-Parallels/boot2docker-vagrant-box#7 with support for Parallels only.
+This is a more-frequently-updated version of
+[Parallels/boot2docker-vagrant-box](https://github.com/Parallels/boot2docker-vagrant-box/issues/7)
+with support for Parallels only.
 
 
-## Usage
+## Using this box as a base
 
-Check the
-[releases page](https://github.com/wearableintelligence/boot2docker-parallels-vagrant-box/releases)
-and `vagrant up` as usual!
+    $ vagrant plugin install vagrant-parallels
+    $ vagrant plugin install vagrant-triggers
 
-    $ vagrant plugin install vagrant-parallels.
-    $ mkdir -p ~/src/wi/new-proj && cd ~/src/wi/new-proj
-    $ mv ~/Downloads/boot2docker-parallels.box ../
-    $ vagrant init ../boot2docker-parallels.box
+    $ curl -LO https://github.com/wearableintelligence/boot2docker-vagrant-box/releases/download/docker%2Fv1.5.0/boot2docker-parallels.box
+    $ vagrant box add --name wearableintelligence/boot2docker-parallels boot2docker-parallels.box
+    $ rm boot2docker-parallels.box
+
+    $ mkdir ~/my_new_project && cd ~/my_new_project
+    $ vagrant init wearableintelligence/boot2docker-parallels
     $ vagrant up
-    $ export DOCKER_HOST="tcp://`vagrant ssh-config | sed -n "s/[ ]*HostName[ ]*//gp"`:2376"
-    $ export DOCKER_TLS_VERIFY=1
-    $ export DOCKER_CERT_PATH="`pwd`/.docker"
+
+    $ source .env
     $ docker ps
 
 
-## Building the Box
+## Building the box
 
   * [Packer](http://www.packer.io) (at least version 0.5.2, 0.6.1 for Parallels)
   * [Parallels Desktop](http://www.parallels.com/products/desktop/)
 
-Then, just run `make`. The resulting box will be named `boot2docker-parallels.box`.
-The entire process to make the box takes about 20 seconds.
+Run `make`. The resulting box will be named `boot2docker-parallels.box`.
 
 
 ## License
