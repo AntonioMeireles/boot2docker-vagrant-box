@@ -1,5 +1,8 @@
-.DS_Store
-packer_cache/
-*.box
-*.iso
-.vagrant
+/packer_cache/
+/.vagrant/
+/output-*/
+
+/*.box
+/*.iso
+
+
