@@ -11,7 +11,8 @@
         "shutdown_command": "sudo poweroff",
         "guest_os_type": "linux-2.6",
         "prlctl": [
-            ["set", "{{.Name}}", "--memsize", "512"]
+            ["set", "{{.Name}}", "--memsize", "1024"],
+            ["set", "{{.Name}}", "--cpus", "2"]
         ],
         "parallels_tools_mode": "disable"
     }],
