@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
     config.ssh.insert_key = true
 
     # Forward the Docker port
-    config.vm.network :forwarded_port, guest: 2376, host: 2376
+    #config.vm.network :forwarded_port, guest: 2376, host: 2376
 
     # Synced folder by default
     config.vm.synced_folder ".", Dir.pwd, type: "nfs", mount_options: ["nolock", "vers=3", "udp"]
