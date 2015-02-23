@@ -1,0 +1,57 @@
+{
+    "builders": [{
+        "name": "parallels",
+        "type": "parallels-iso",
+        "iso_url": "boot2docker-vagrant-_VERSION_.iso",
+        "iso_checksum": "_CHECKSUM_",
+        "iso_checksum_type": "md5",
+        "boot_wait": "5s",
+        "ssh_username": "docker",
+        "ssh_password": "tcuser",
+        "shutdown_command": "sudo poweroff",
+        "guest_os_type": "linux-2.6",
+        "prlctl": [
+            ["set", "{{.Name}}", "--memsize", "1024"],
+            ["set", "{{.Name}}", "--cpus", "2"]
+        ],
+        "parallels_tools_mode": "disable"
+    }, {
+        "name": "virtualbox",
+        "type": "virtualbox-iso",
+        "iso_url": "boot2docker-vagrant-_VERSION_.iso",
+        "iso_checksum": "_CHECKSUM_",
+        "iso_checksum_type": "md5",
+        "boot_wait": "5s",
+        "ssh_username": "docker",
+        "ssh_password": "tcuser",
+        "shutdown_command": "sudo poweroff",
+        "guest_additions_mode": "attach",
+        "guest_os_type": "Linux_64",
+        "vboxmanage": [
+            ["modifyvm", "{{.Name}}", "--memory", "1024"],
+            ["modifyvm", "{{.Name}}", "--cpus", "2"]
+        ]
+    }, {
+        "type": "vmware-iso",
+        "iso_url": "boot2docker-vagrant-_VERSION_.iso",
+        "iso_checksum_type": "_CHECKSUM_",
+        "boot_wait": "5s",
+        "guest_os_type": "other3xlinux-64",
+        "ssh_username": "docker",
+        "ssh_password": "tcuser",
+        "shutdown_command": "sudo poweroff"
+    }],
+
+    "provisioners": [{
+        "type": "shell",
+        "inline": [ "mkfs.ext4 -F -L boot2docker-data /dev/sda" ]
+    }],
+
+    "post-processors": [{
+        "type": "vagrant",
+        "include": [ "boot2docker-vagrant-_VERSION_.iso" ],
+        "vagrantfile_template": "vagrantfile",
+        "output": "boot2docker-_VERSION_-{{.Provider}}.box"
+    }]
+}
+

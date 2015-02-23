@@ -1,0 +1,172 @@
+#!/bin/sh
+#
+# Copyright (c) 2015 António Meireles <antonio.meireles@reformi.st>
+#
+# This file is distributed under the terms of the MIT License.
+# A copy is available at http://opensource.org/licenses/MIT
+#
+
+set -eu -o pipefail
+LC_ALL=C
+[[ "${TRACE:-}" ]] && set -x
+
+GITHUB_USERNAME=${GITHUB_USERNAME:-AntonioMeireles}
+ATLAS_USERNAME=${ATLAS_USERNAME:-AntonioMeireles}
+
+ATLAS_API_ENDPOINT=https://atlas.hashicorp.com/api/v1/box/
+PROVIDERS=(parallels virtualbox)
+
+scream () {
+    cat <<< "$@" 1>&2
+    exit 1
+}
+
+fetchVersionReleaseNotes () {
+    declare version="$1"
+    revision="v${version}"
+    preAuth=(-H "Authorization: token ${GITHUB_API_TOKEN} ")
+    [[ -z "${GITHUB_API_TOKEN}" ]] && preAuth=()
+    jqQ=".[] | select(.tag_name==\$revision) .body"
+    curl "${preAuth[@]}" -s https://api.github.com/repos/boot2docker/boot2docker/releases | \
+    jq --arg revision "${revision}" "${jqQ}" -e || \
+          scream "oops. ${revision} doesn't seem available at github..."
+}
+
+generateVersionSummary () {
+    declare user="$1" version="$2"
+    highlights=$(fetchVersionReleaseNotes "${version}" | \
+        cut -c 2- | rev | cut -c 2- | rev)
+    root="https://github.com/${GITHUB_USERNAME}/boot2docker-vagrant-box"
+    printf "%s\n" "##boot2docker [${version}](https://github.com/boot2docker/boot2docker/releases#${version})\n"\
+           "\r###release highlights:\n" \
+           "\r${highlights}\n"\
+           "\r___\n"\
+           "\r**Up to date [boot2docker](https://github.com/boot2docker/boot2docker) "\
+           "vagrant box,** for Virtualbox and Parallels, **done _right_**."\
+           "\rSee **[here](${root})** for details. "\
+           "Please [report](${root}/issues) any issue you may find."
+}
+
+updateVersionDescription () {
+    declare user="$1" version="$2"
+    endpoint=${ATLAS_API_ENDPOINT}/${user}/boot2docker-vagrant-box/version/${version}
+    raw_summary=$(generateVersionSummary "${user}" "${version}")
+    summary=$(echo "${raw_summary}" | sed -e 's,\\,,g')
+    curl -s "${endpoint}" -X PUT \
+           -d "version[description]=${summary}" \
+           -d "access_token=${ATLAS_API_TOKEN}" &>/dev/null || \
+         scream "unable do update summary of ${version}. Aborting."
+}
+
+updateAllVersionsDescriptions () {
+    endpoint="${ATLAS_API_ENDPOINT}/${ATLAS_USERNAME}/boot2docker-vagrant-box/"
+    jqQ=" .versions[] | select(.status==\"active\") | .version"
+    revisions=$(curl -s "${endpoint}" | jq "${jqQ}" | cut -c 2- | rev | cut -c 2- | rev)
+    for revision in ${revisions}; do
+        printf "%s\n" "== ${revision} ==="
+        updateVersionDescription "${ATLAS_USERNAME}" "${revision}"
+    done
+}
+
+addNewVersion () {
+    declare user="$1" version="$2"
+    endpoint=${ATLAS_API_ENDPOINT}/${user}/boot2docker-vagrant-box/versions
+    curl -s "${endpoint}" -X POST -d "version[version]=${version}" \
+         -d "access_token=${ATLAS_API_TOKEN}" &>/dev/null || \
+        scream "unable do add boot2docker-vagrant-box/${version} to Atlas. Aborting."
+    for provider in "${PROVIDERS[@]}"; do
+        endpoint=${ATLAS_API_ENDPOINT}/${user}/boot2docker-vagrant-box/version/${version}/providers
+        curl -s "${endpoint}" -X POST \
+            -d "provider[name]=${provider}" \
+            -d "access_token=${ATLAS_API_TOKEN}" &>/dev/null || \
+                 scream "unable do add boot2docker-vagrant-box/${version}/${provider} to Atlas. Aborting."
+    done
+    updateVersionDescription "${user}" "${version}"
+}
+
+checkIfVersionExists () {
+    declare  currentAtlas="$1" version="$2"
+    jqQ=".versions[] | select(.version==\$version)"
+    [[ -z $( jq --arg version "${version}" \
+        -e "${jqQ}" < "${currentAtlas}" ) ]] && return 1
+    return 0
+}
+
+checkIfVersionHasProviderUploaded () {
+    declare currentAtlas="$1" version="$2" provider="$3"
+    jqQ=".versions[] | select(.version==\$version).providers[] |"
+    jqQ+=" select(.name==\$provider) | .hosted_token"
+    v=$(jq --arg version "${version}" \
+        --arg provider "${provider}" "${jqQ}" < "${currentAtlas}")
+    [[ -z "${v}" || "${v}" == "null" ]] && return 1
+    return 0
+}
+
+checkIfVersionIsPublished () {
+    declare currentAtlas="$1" version="$2"
+    jqQ=".versions[] | select(.version==\$version and .status==\"active\")"
+    [[ -z $( jq --arg version "${version}" -e "${jqQ}" < "${currentAtlas}" ) ]] && return 1
+    return 0
+}
+
+getLatestUpstream () {
+    preAuth=(-H "Authorization: token ${GITHUB_API_TOKEN} ")
+    endpoint=https://api.github.com/repos/boot2docker/boot2docker/releases
+    [[ -z "${GITHUB_API_TOKEN}" ]] && preAuth=()
+    jqV=".[] | select(.draft==false and .prerelease==false) | .tag_name"
+    temp="$(mktemp)"
+    curl -s "${preAuth[@]}" -s ${endpoint} > "${temp}"
+    (jq "${jqV}" < "${temp}") | head -n 1 | \
+        cut -c 2- | rev | cut -c 2- | rev | sed -e 's,^v,,'
+    rm -rf "${temp}"
+}
+checkRequires () {
+    for bin in jq curl sed tr cat cut grep rev sort; do
+        which ${bin} >/dev/null 2>&1 || \
+            scream "'${bin}' required but not found in your \$PATH. Aborting."
+    done
+}
+
+getDataFromAtlas () {
+    declare user="$1"
+    tmp="$(mktemp)"
+    curl -s "${ATLAS_API_ENDPOINT}/${user}/boot2docker-vagrant-box"/ > "${tmp}"
+    echo "${tmp}"
+}
+
+getExistingReleases () {
+    declare currentAtlas="$1"
+    jq '.versions[]| .version' < "${currentAtlas}" | cut -c 2- | rev | cut -c 2- | rev
+}
+
+main () {
+    checkRequires
+    echo " - available boot2docker releases"
+    echo "   \t\t(as off $(date -u "+%Y.%m.%d %H:%M"))"
+
+    currentAtlas=$(getDataFromAtlas "${ATLAS_USERNAME}")
+    latest=$(getLatestUpstream)
+    already=$(getExistingReleases "${currentAtlas}")
+    current="${already} ${latest}"
+    versions=$( echo "${current}" | tr " " "\n" | sort -nur )
+
+    for version in ${versions}; do
+        status=" (unreleased)"
+        if checkIfVersionExists "${currentAtlas}" "${version}"; then
+            checkIfVersionIsPublished "${currentAtlas}" "${version}" && \
+                status=" (published) "
+            echo "     - ${version} ${status}"
+            for provider in "${PROVIDERS[@]}"; do
+                checkIfVersionHasProviderUploaded "${currentAtlas}" "${version}" "${provider}" || \
+                echo "       > ${provider}: box not yet uploaded"
+            done
+        else
+            echo "     - ${version} ${status}"
+            [[  "$#" -eq 1 && "$1" == "-n" ]] && \
+                addNewVersion "${ATLAS_USERNAME}"  "${version}"
+        fi
+    done
+    rm -rf "${currentAtlas}"
+}
+
+main "$@"
