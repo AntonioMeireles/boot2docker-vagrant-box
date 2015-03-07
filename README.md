@@ -98,6 +98,16 @@ We have two options:
 
 then *just* do whatever you want to with docker :smile:
 
+#### allocated resources
+
+By default the boot2docker Vagrant box will run with 1 CPU and 1024MB
+of memo allocated to it. You can change the number of running CPUs via
+the `B2D_CPUS` environment variable and the memory allocated to it (in MB)
+via the `B2D_MEM` environment variable.
+
+Ence `B2D_CPUS=2 B2D_MEM=2048 vagrant up` would start a boot2docker Vagrant
+box with 2GB of memory and 2 virtual CPUS allocated.
+
 ## TODO
 *(in no particular order)*
 

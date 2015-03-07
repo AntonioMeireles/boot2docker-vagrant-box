@@ -44,7 +44,7 @@
 
     "provisioners": [{
         "type": "shell",
-        "inline": [ "mkfs.ext4 -F -L boot2docker-data /dev/sda" ]
+        "inline": [ "echo 'boot2docker, please format-me' > /dev/sda" ]
     }],
 
     "post-processors": [{

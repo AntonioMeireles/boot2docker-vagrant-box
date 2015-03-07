@@ -16,6 +16,9 @@ unless Vagrant.has_plugin?("vagrant-triggers")
     exit
 end
 
+MEM = ENV['B2D_MEM'] || 1024
+CPUS = ENV['B2D_CPUS'] || 1
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.ssh.shell = "sh"
     config.ssh.username = "docker"
@@ -44,6 +47,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 File.expand_path("../boot2docker-vagrant-_VERSION_.iso",
                     __FILE__),
         ]
+    end
+
+    ["parallels", "virtualbox"].each do |h|
+        config.vm.provider h do |n|
+            n.memory = MEM
+            n.cpus = CPUS
+        end
     end
 
     ["vmware_fusion", "vmware_workstation"].each do |vmware, override|
