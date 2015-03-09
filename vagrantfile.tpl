@@ -6,14 +6,14 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.require_version ">= 1.6.3"
 
-unless Vagrant.has_plugin?("vagrant-triggers")
-    puts "===================================================================="
-    puts "  ERROR: The required 'vagrant-triggers' plugin is not installed."
-    puts "         Run 'vagrant plugin install vagrant-triggers' to install"
-    puts "         it and then, after that, just call 'vagrant up' again..."
-    puts "===================================================================="
-
-    exit
+required_plugins = %w(vagrant-triggers)
+required_plugins.each do |plugin|
+  need_restart = false
+  unless Vagrant.has_plugin? plugin
+    system "vagrant plugin install #{plugin}"
+    need_restart = true
+  end
+  exec "vagrant #{ARGV.join(' ')}" if need_restart
 end
 
 MEM = ENV['B2D_MEM'] || 1024
