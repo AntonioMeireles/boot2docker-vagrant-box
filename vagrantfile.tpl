@@ -18,8 +18,10 @@ end
 
 MEM = ENV['B2D_MEM'] || 1024
 CPUS = ENV['B2D_CPUS'] || 1
+EXTRA_ARGS = ENV['B2D_EXTRA_ARGS'] || ''
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    config.vm.box_version = ">= _VERSION_._DATE_._COMMIT_"
     config.ssh.shell = "sh"
     config.ssh.username = "docker"
     # config.ssh.password = "tcuser"
@@ -104,6 +106,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             fi
             cp -r /home/docker/.docker #{Dir.pwd}
         EOT
+        if ! EXTRA_ARGS.empty?
+          info "restarting the docker daemon with #{EXTRA_ARGS}..."
+          run_remote <<-EOT.prepend("\n\n") + "\n"
+            sudo /etc/init.d/docker stop
+            echo "#{EXTRA_ARGS}" > /var/lib/boot2docker/profile
+            sudo /etc/init.d/docker start
+          EOT
+        end
     end
 
     config.trigger.after [:up, :resume] do

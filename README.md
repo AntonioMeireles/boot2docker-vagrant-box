@@ -108,6 +108,13 @@ environment variable.
 Ence `B2D_CPUS=2 B2D_MEM=2048 vagrant up` would start **boot2docker** with
 2GB of memory and 2 virtual CPUS allocated to it.
 
+#### passing aditional arguments to the docker daemon
+
+You can use the `B2D_EXTRA_ARGS` environment variable to pass aditional
+arguments to the docker daemon.
+
+So, `B2D_EXTRA_ARGS="--dns 192.168.1.2" vagrant up` would tell the Docker daemon to use that specific DNS server.
+
 #### updates and data persistence
 
 To update to a newer version of this **boot2docker** box, and per
