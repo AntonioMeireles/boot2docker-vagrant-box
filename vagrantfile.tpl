@@ -6,7 +6,7 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.require_version ">= 1.6.3"
 
-required_plugins = %w(vagrant-triggers)
+required_plugins = %w(vagrant-triggers vagrant-reload)
 required_plugins.each do |plugin|
   need_restart = false
   unless Vagrant.has_plugin? plugin
@@ -137,5 +137,34 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         info ""
         info "============================================================================="
     end
+    # data persistence
+    config.vm.provision "trigger" do |trigger|
+      trigger.fire do
+        if File.exist?("#{Dir.pwd}/.boot2docker/persistent.data")
+          info "============================================================================="
+          info "  [INFO] restoring persistent data ..."
+          info "   ... from #{Dir.pwd}/.boot2docker/persistent.data ..."
+          run_remote <<-EOT.prepend("\n\n") + "\n"
+            sudo /etc/init.d/docker stop
+            [ -f  "#{Dir.pwd}/.boot2docker/persistent.data" ] && \
+              sudo tar xjf "#{Dir.pwd}/.boot2docker/persistent.data" -C /
+            sudo /etc/init.d/docker start
+          EOT
+          info  "============================================================================="
+          config.vm.provision :reload
+        end
+      end
+    end
+    config.trigger.before :destroy do
+      info "============================================================================="
+      info "  [INFO] preserving persistent data..."
+      run_remote <<-EOT.prepend("\n\n") + "\n"
+        sudo /etc/init.d/docker stop &>/dev/null
+        [ -d "#{Dir.pwd}/.boot2docker" ] || mkdir -p "#{Dir.pwd}/.boot2docker"
+        sudo tar cjf "#{Dir.pwd}/.boot2docker/persistent.data" \
+          /home/docker/ /var/lib/boot2docker/* /var/lib/docker/* &>/dev/null
+      EOT
+      info " persistent data saved in #{Dir.pwd}/.boot2docker/persistent.data"
+      info "============================================================================="
+    end
 end
-

@@ -100,20 +100,25 @@ then *just* do whatever you want to with docker :smile:
 
 #### allocated resources
 
-By default the boot2docker Vagrant box will run with 1 CPU and 1024MB
-of memo allocated to it. You can change the number of running CPUs via
-the `B2D_CPUS` environment variable and the memory allocated to it (in MB)
-via the `B2D_MEM` environment variable.
+By default this **boot2docker** box will run with 1 CPU and 1024MB of memory
+allocated to it. You can change the number of running CPUs via the `B2D_CPUS`
+environment variable and the memory allocated to it (in MB) via the `B2D_MEM`
+environment variable.
 
-Ence `B2D_CPUS=2 B2D_MEM=2048 vagrant up` would start a boot2docker Vagrant
-box with 2GB of memory and 2 virtual CPUS allocated.
+Ence `B2D_CPUS=2 B2D_MEM=2048 vagrant up` would start **boot2docker** with
+2GB of memory and 2 virtual CPUS allocated to it.
+
+#### updates and data persistence
+
+To update to a newer version of this **boot2docker** box, and per
+[general vagrant behavior](http://docs.vagrantup.com/v2/boxes/versioning.html),
+you'll need to run `vagrant destroy`, `vagrant box update` and  `vagrant up`. When destroying the existing box boot2docker persistent data will be saved
+inside `.boot2docker` in the Vagrantfile directory and later restored into the newly provisioned up-to-date box.
 
 ## TODO
 *(in no particular order)*
 
 - add **Parallel Tools** support (will be simpler ence [this](https://github.com/boot2docker/boot2docker/issues/755) upstream *issue* gets fixed) for *native* shared folder support.
-- get persistent data (**/var/lib/docker** and **/var/lib/boot2docker**) handled right, out of the box, for smooth updates.
-
 
 ## (re)building or modifying the box locally
 ### pre-requisites
