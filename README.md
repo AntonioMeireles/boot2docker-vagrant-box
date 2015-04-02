@@ -98,6 +98,11 @@ We have two options:
 
 then *just* do whatever you want to with docker :smile:
 
+#### troubleshouting
+If on `vagrant up` you hit NFS errors please make sure your */etc/sudoers* file
+is as said [here](https://docs.vagrantup.com/v2/synced-folders/nfs.html) in
+the official Vagrant documentation.
+
 #### allocated resources
 
 By default this **boot2docker** box will run with 1 CPU and 1024MB of memory

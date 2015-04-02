@@ -33,7 +33,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # Attach the b2d ISO so that it can boot
     config.vm.provider "virtualbox" do |v, override|
          # Synced folder by default,
-        override.vm.synced_folder ".", Dir.pwd
+        override.vm.synced_folder ENV['HOME'], ENV['HOME']
         # Forward the Docker port
         override.vm.network :forwarded_port, guest: 2376, host: 2376
 
@@ -68,8 +68,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
 
     config.vm.provider :parallels do |p, override|
-        override.vm.synced_folder ".", Dir.pwd,
-            type: "nfs", mount_options: ["nolock", "vers=3", "udp"]
+        override.vm.synced_folder ENV['HOME'], ENV['HOME'],
+            type: "nfs",
+            mount_options: ["nolock", "vers=3", "udp"]
 
         p.optimize_power_consumption = false
         p.check_guest_tools          = false
@@ -106,6 +107,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             fi
             cp -r /home/docker/.docker #{Dir.pwd}
         EOT
+
+        info "getting #{ENV['USER']} as owner of #{Dir.pwd}/.docker"
+        system <<-EOT.prepend("\n\n") + "\n"
+            sudo chown -R #{ENV['USER']} "#{Dir.pwd}/.docker"
+            sudo chmod -R 755 "#{Dir.pwd}/.docker"
+        EOT
+
         if ! EXTRA_ARGS.empty?
           info "restarting the docker daemon with #{EXTRA_ARGS}..."
           run_remote <<-EOT.prepend("\n\n") + "\n"
@@ -114,9 +122,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             sudo /etc/init.d/docker start
           EOT
         end
-    end
 
-    config.trigger.after [:up, :resume] do
         info "Building Docker communication environment variables."
         system <<-EOT.prepend("\n\n") + "\n"
             docker_host_ip="$(vagrant ssh-config | \
@@ -128,17 +134,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             echo export DOCKER_HOST="tcp://${docker_host_ip}:2376" >> .env
             echo export DOCKER_CERT_PATH="`pwd`/.docker" >> .env
         EOT
-    end
 
-    config.trigger.after [:up, :resume] do
         info "Adjusting date and time after suspend and resume."
         run_remote <<-EOT.prepend("\n\n") + "\n"
             timeout -t 5 sudo /usr/local/bin/ntpclient -s -h pool.ntp.org
             date
         EOT
-    end
 
-    config.trigger.after [:up, :resume] do
         info "============================================================================="
         info ""
         info "  please don't forget to run 'source .env' after boot before calling docker  "
