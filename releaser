@@ -27,7 +27,7 @@ fetchVersionReleaseNotes () {
     preAuth=(-H "Authorization: token ${GITHUB_API_TOKEN} ")
     [[ -z "${GITHUB_API_TOKEN}" ]] && preAuth=()
     jqQ=".[] | select(.tag_name==\$revision) .body"
-    curl "${preAuth[@]}" -s https://api.github.com/repos/boot2docker/boot2docker/releases | \
+    curl -k "${preAuth[@]}" -s https://api.github.com/repos/boot2docker/boot2docker/releases | \
     jq --arg revision "${revision}" "${jqQ}" -e || \
           scream "oops. ${revision} doesn't seem available at github..."
 }
@@ -52,7 +52,7 @@ updateVersionDescription () {
     endpoint=${ATLAS_API_ENDPOINT}/${user}/boot2docker-vagrant-box/version/${version}
     raw_summary=$(generateVersionSummary "${user}" "${version}")
     summary=$(echo "${raw_summary}" | sed -e 's,\\,,g')
-    curl -s "${endpoint}" -X PUT \
+    curl -k -s "${endpoint}" -X PUT \
            -d "version[description]=${summary}" \
            -d "access_token=${ATLAS_API_TOKEN}" &>/dev/null || \
          scream "unable do update summary of ${version}. Aborting."
@@ -71,12 +71,12 @@ updateAllVersionsDescriptions () {
 addNewVersion () {
     declare user="$1" version="$2"
     endpoint=${ATLAS_API_ENDPOINT}/${user}/boot2docker-vagrant-box/versions
-    curl -s "${endpoint}" -X POST -d "version[version]=${version}" \
+    curl -k -s "${endpoint}" -X POST -d "version[version]=${version}" \
          -d "access_token=${ATLAS_API_TOKEN}" &>/dev/null || \
         scream "unable do add boot2docker-vagrant-box/${version} to Atlas. Aborting."
     for provider in "${PROVIDERS[@]}"; do
         endpoint=${ATLAS_API_ENDPOINT}/${user}/boot2docker-vagrant-box/version/${version}/providers
-        curl -s "${endpoint}" -X POST \
+        curl -k -s "${endpoint}" -X POST \
             -d "provider[name]=${provider}" \
             -d "access_token=${ATLAS_API_TOKEN}" &>/dev/null || \
                  scream "unable do add boot2docker-vagrant-box/${version}/${provider} to Atlas. Aborting."
@@ -115,7 +115,7 @@ getLatestUpstream () {
     [[ -z "${GITHUB_API_TOKEN}" ]] && preAuth=()
     jqV=".[] | select(.draft==false and .prerelease==false) | .tag_name"
     temp="$(mktemp)"
-    curl -s "${preAuth[@]}" -s ${endpoint} > "${temp}"
+    curl -k -s "${preAuth[@]}" -s ${endpoint} > "${temp}"
     (jq "${jqV}" < "${temp}") | head -n 1 | \
         cut -c 2- | rev | cut -c 2- | rev | sed -e 's,^v,,'
     rm -rf "${temp}"
@@ -130,7 +130,7 @@ checkRequires () {
 getDataFromAtlas () {
     declare user="$1"
     tmp="$(mktemp)"
-    curl -s "${ATLAS_API_ENDPOINT}/${user}/boot2docker-vagrant-box"/ > "${tmp}"
+    curl -k -s "${ATLAS_API_ENDPOINT}/${user}/boot2docker-vagrant-box"/ > "${tmp}"
     echo "${tmp}"
 }
 

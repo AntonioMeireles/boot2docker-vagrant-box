@@ -1,4 +1,4 @@
-VERSION = $(shell docker -v | sed -e 's,.*version ,,' -e 's/,.*//')
+VERSION ?= 1.6.0
 DATE = $(shell date -u '+%Y%m%d%H%M')
 COMMIT = $(shell git describe --abbrev=7 --always)
 
