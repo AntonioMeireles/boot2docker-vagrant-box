@@ -1,4 +1,4 @@
-VERSION ?= 1.6.1
+VERSION ?= 1.6.2
 DATE = $(shell date -u '+%Y%m%d%H%M')
 COMMIT = $(shell git describe --abbrev=7 --always)
 
